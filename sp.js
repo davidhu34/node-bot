@@ -1,6 +1,8 @@
 const SerialPort = require('serialport')
+
+const COMport = require('./configs').COM
 const iconv = require('iconv-lite')
-const bufferConcat = require('buffer-concat');
+const bufferConcat = require('buffer-concat')
 const events = require('events')
 class eventEmitter extends events {}
 
@@ -14,32 +16,32 @@ const ttsBuffer = text => {
 		let buf1 = new Buffer(5)
 		buf1[0] = 0xFD
 		buf1[1] = 0x00
-		buf1[2] = buflen//Number(14).toString(16);  
+		buf1[2] = buflen//Number(14).toString(16)  
 		buf1[3] = 0x01  
 		buf1[4] = 0x02
 			
-		const big5buf = iconv.encode(ttscmd, 'BIG5');
-		const b3 = bufferConcat([buf1, big5buf]);
-		console.log(b3.toString('hex'));   
+		const big5buf = iconv.encode(ttscmd, 'BIG5')
+		const b3 = bufferConcat([buf1, big5buf])
+		console.log(b3.toString('hex'))
 		return b3
 }
 
 const spTTS = () => {
 	const tts = new eventEmitter() 
-	const sp = new SerialPort("COM6", {
+	const sp = new SerialPort(COMport.tts, {
 	    baudrate: 9600
 	})
 	sp.on("open", () => {
 		 console.log('Local TTS port opened')
 	})
 	sp.on('data', data => {
-		const hexstr = new Buffer(data).toString('hex');
-		console.log('on Data '+hexstr);
+		const hexstr = new Buffer(data).toString('hex')
+		console.log('on Data '+hexstr)
 		if (hexstr.indexOf('41') > -1){
-			console.log('Starting Playing');
+			console.log('Starting Playing')
 		}
 		if (hexstr.indexOf('4f') > -1) {
-			console.log('Finish Playing');
+			console.log('Finish Playing')
 			tts.emit('finish')
 		}
 	})
@@ -52,7 +54,7 @@ const spTTS = () => {
 }
 const spWaker = () => {
 	const waker = new eventEmitter() 
-	const sp = new SerialPort("COM5", {
+	const sp = new SerialPort(COMport.waker, {
 	    baudrate: 9600
 	})
 	sp.on("open", () => {

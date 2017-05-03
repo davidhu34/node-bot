@@ -12,6 +12,8 @@
   "dependencies": {
     "buffer-concat": "^1.0.0",
     "iconv-lite": "^0.4.17",
-    "serialport": "^4.0.7"
+    "mqtt": "^2.7.1",
+    "serialport": "^4.0.7",
+    "watson-developer-cloud": "^2.31.0"
   }
 }
