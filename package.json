@@ -1,0 +1,17 @@
+{
+  "name": "nodebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot_index.js",
+  "scripts": {
+    "start": "node bot_index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "buffer-concat": "^1.0.0",
+    "iconv-lite": "^0.4.17",
+    "serialport": "^4.0.7"
+  }
+}
