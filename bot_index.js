@@ -20,10 +20,15 @@ stt.on('result', res => {
 	if (!state.speaking && res.replace(/\s/g, '')) {
 		console.log(res)
 		state.speaking = true
-		tts.emit('speak', res)
+		//tts.emit('speak', res)
+		conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res}))
 	}
 })
-
+conversation.on('message', (topic, payloadBuffer) =>　{
+	const payload = JSON.parse(payloadBuffer)
+	console.log(payload)
+	tts.emit('speak', payload.data.text)
+})
 tts.on('finish', () => {
 	state.speaking = false
 	stt.emit('start')

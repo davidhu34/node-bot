@@ -22,4 +22,4 @@ iot_client.on('connect', () => {
 	})
 })
 
-return iot_client
+module.exports = iot_client
