@@ -36,7 +36,7 @@ const spTTS = () => {
 	})
 	sp.on('data', data => {
 		const hexstr = new Buffer(data).toString('hex')
-		console.log('on Data '+hexstr)
+		console.log('tts on Data '+hexstr)
 		if (hexstr.indexOf('41') > -1){
 			console.log('Starting Playing')
 		}
@@ -62,7 +62,7 @@ const spWaker = () => {
 	})
 	sp.on('data', data => {
 		const hexstr = new Buffer(data).toString('hex')
-		console.log('on Data!! '+hexstr, typeof(hexstr))
+		console.log('waker on Data '+hexstr, typeof(hexstr))
 		if(hexstr=='09'){
 			console.log('櫻木')
 			waker.emit('wake')
