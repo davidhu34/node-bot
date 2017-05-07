@@ -8,7 +8,7 @@ const tts = require('./sp.js').tts()
 const stt = require('./stt.js').javaStt()
 const fbTextReply = require('./fbTextReply')
 const conversation = require('./conversation.js')
-const ifly = require('./iflyQA')
+const ifly = require('./iflyQA')()
 /*
 request.post({	
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
@@ -17,7 +17,6 @@ request.post({
 }, function(error, response, body){
   console.log(JSON.parse(body).answer.text)
 })
-*/
 request.post({
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
   url:     'http://cb8777d1.ngrok.io/chzw',
@@ -25,8 +24,17 @@ request.post({
 }, function(error, response, body){
   console.log(body)
 })
+*/
 
-ifly('你好')
+ifly.on('iot', res => {
+	console.log('ifly iot:', res)
+	conversation.publish(res.topic, res.payload)
+	//tts.emit('speak', answer)
+})
+ifly.on('a', answer => {
+	console.log('ifly A:', answer)
+	tts.emit('speak', answer)
+})
 let state = {
 	asleep: true,
 	speaking: false
@@ -55,9 +63,12 @@ conversation.on('message', (topic, payloadBuffer) =>　{
 	console.log(payload)
 	const speech = fbTextReply(payload)
 	console.log('to speak:',speech)
-	tts.emit('speak', speech)
+	if(speech) tts.emit('speak', speech)
 })
 tts.on('finish', () => {
 	state.speaking = false
 	stt.emit('start')
 })
+
+
+ifly.emit('q', '我肚子餓了')

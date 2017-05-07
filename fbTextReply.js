@@ -3,6 +3,8 @@ const stockname = require('./tw_stockname.json')
 module.exports = payload => {
 	const { prev, type, data } = payload
 	switch (type) {
+		case 'websearch':
+			return data.result
 		case 'weather':
 			return data.weather.narrative
 		case 'stock':
