@@ -17,14 +17,14 @@ request.post({
 }, function(error, response, body){
   console.log(JSON.parse(body).answer.text)
 })
-
+*/
 request.post({
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
   url:     'http://cb8777d1.ngrok.io/chzw',
   body:    "text=简化字，民间俗稱"
 }, function(error, response, body){
   console.log(body)
-})*/
+})
 
 ifly('你好')
 let state = {
