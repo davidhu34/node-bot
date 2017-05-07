@@ -33,6 +33,8 @@ const spTTS = () => {
 	})
 	sp.on("open", () => {
 		 console.log('Local TTS port opened')
+
+// tts.emit('speak', '嗨，')
 	})
 	sp.on('data', data => {
 		const hexstr = new Buffer(data).toString('hex')

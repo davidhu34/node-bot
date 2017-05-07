@@ -9,15 +9,17 @@ const avg = arr => {
 	}
 	return sum / arr.length
 }
-const command = 'face_detection/Face_detect.exe'
+const command = 'EXEfile_face_detection/Face_detect_NoShow.exe'
 const face = new eventEmitter()
 
 let hasFace = false
 let state = []
-const detection = exec( command,
+const detection = exec( command,  {
+        cwd: 'C:/Users/IBM_ADMIN/Documents/nodebot/'
+    },
 	(err, stdout, stderr) => {
 		if (err) {
-			console.log(err)
+			console.log('err,',err)
 			return;
 		} else {
 			//console.log('stdout', stdout)
@@ -27,12 +29,15 @@ const detection = exec( command,
 	}
 )
 detection.stdout.on('data', data => {
+	console.log(data)
 	state = state.slice( state.length < 30? 0:1 ).push(Number(data[15]))
 	if (hasFace && avg(state) < 0.5) {
+		console.log('turned away')
 		hasFace = false
-		face.emit('wake')
 	} else if (!hasFace && avg(state) > 0.5) {
+		console.log('turned to face')
 		hasFace = true
+		face.emit('wake')
 	}
 })
 detection.stderr.on('data', data => {

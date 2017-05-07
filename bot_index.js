@@ -3,30 +3,41 @@
 const request = require('request')
 
 //const waker = require('./sp.js').waker()
-const waker = require('./faceDetection')
+//const waker = require('./faceDetection')
 const tts = require('./sp.js').tts()
 const stt = require('./stt.js').javaStt()
 const fbTextReply = require('./fbTextReply')
 const conversation = require('./conversation.js')
+const ifly = require('./iflyQA')
 /*
-request.post({
+request.post({	
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
   url:     'http://cb8777d1.ngrok.io/ifly',
   body:    "text=我肚子餓"
 }, function(error, response, body){
   console.log(JSON.parse(body).answer.text)
+})
+
+request.post({
+  headers: {'content-type' : 'application/x-www-form-urlencoded'},
+  url:     'http://cb8777d1.ngrok.io/chzw',
+  body:    "text=简化字，民间俗稱"
+}, function(error, response, body){
+  console.log(body)
 })*/
+
+ifly('你好')
 let state = {
 	asleep: true,
 	speaking: false
 }
-
+/*
 waker.on('wake', () => {
 	if(state.asleep) {
 		stt.emit('start')
 		state.asleep = false
 	}
-})
+})*/
 stt.on('result', result => {
 	const res = result.replace(/\s/g, '')
 	console.log('~'+res+'~')
