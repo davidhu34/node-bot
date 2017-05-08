@@ -256,7 +256,7 @@ module.exports = iot => {
 		request.post({
 		  headers: {'content-type' : 'application/x-www-form-urlencoded'},
 		  url:     'http://cb8777d1.ngrok.io/ifly',
-		  body:    "text="+text
+		  body:    "text="+text.replace('+', '加')
 		}, function(err, response, body){
 			if (err) { console.log(err)
 			} else {

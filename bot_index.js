@@ -5,6 +5,9 @@ const events = require('events')
 class eventEmitter extends events {}
 const { watch, unwatch } = require('melanke-watchjs')
 const md5 = require('md5')
+//const player = require('player')
+//const ding = new player('./notify.mp3')
+
 //const waker = require('./sp.js').waker()
 //const waker = require('./faceDetection')
 const waker = new eventEmitter()
@@ -21,22 +24,30 @@ let state = {
 	speaking: false
 }
 let lines = {}
+let qs = {}
 /*
 waker.on('wake', () => {
-	if(state.asleep) {
-		stt.emit('start')
-		state.asleep = false
-	}
+	ding.play(() => {
+		if(state.asleep) {
+			stt.emit('start')
+			state.asleep = false
+		}
+	})
 })*/
 stt.on('result', result => {
 	const res = result.replace(/\s/g, '')
 	console.log('~'+res+'~')
 	if (!state.speaking) {
 		if (res) {
+			const mid = md5(res)
+			qs = {
+				ifly: null,
+				watson: null
+			}
 			console.log('to publish:', res)
 			state.speaking = true
 			//tts.emit('speak', res)
-			conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res}))
+			conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res, mid:mid}) )
 			ifly.emit('q',res)
 		} else stt.emit('start')
 	} 
@@ -45,10 +56,22 @@ stt.on('result', result => {
 conversation.on('message', (topic, payloadBuffer) =>　{
 	const payload = JSON.parse(payloadBuffer)
 	console.log(payload)
+	const hasAnswer = payload.data.hasAnswer
 	const speech = fbTextReply(payload)
+	qs.watson = speech
 	console.log('watson A:',speech)
-	if(speech) //tts.emit('speak', speech)
-		talker.emit('talk', speech)
+	if (speech) {
+		console.log(hasAnswer)
+		if (hasAnswer !== undefined && hasAnswer === false) {
+			watch(qs, 'ifly', (prop,action, val) => {
+				if (val === 'noanswer' && speech) {
+					console.log('noanswer watson play')
+					talker.emit('talk', speech)
+				}
+				unwatch(qs, 'ifly')
+			})
+		} else talker.emit('talk', speech)
+	}
 })
 
 ifly.on('iot', res => {
@@ -58,7 +81,10 @@ ifly.on('iot', res => {
 ifly.on('a', answer => {
 	console.log('ifly A:', answer)
 	//tts.emit('speak', answer)
-	talker.emit('talk', answer)
+	if(answer) {
+		qs.ifly = answer
+		talker.emit('talk', answer)
+	} else qs.ifly = 'noanswer'
 })
 talker.on('talk', line => {
 	console.log('talker get', line)
@@ -87,18 +113,20 @@ tts.on('finish', () => {
 		}
 	})
 	state.speaking = hasNext
-	if (!hasNext) stt.emit('start')
+	if (!hasNext && qs.watson && qs.ifly) stt.emit('start')
 //	if (!state.asleep)
 //		stt.emit('start')
 })
 
 //waker.emit('wake')
 //ifly.emit('q', '我肚子餓了')
-const res = '你好'
+/*const res = '你好'
 conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res}))
 ifly.emit('q',res)
-
-
+*/
+//ding.play( () => {
+	stt.emit('start')
+//})
 /*
 request.post({	
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
