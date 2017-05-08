@@ -45,7 +45,7 @@ stt.on('result', result => {
 	console.log('~'+res+'~')
 	if (!state.speaking) {
 		if (res && res !== '。') {
-			const mid = md5(res)
+			const mid = md5(res+String(new Date()))
 			qs = {
 				ifly: null,
 				watson: null
@@ -76,55 +76,38 @@ conversation.on('message', (topic, payloadBuffer) =>　{
 	let speech = fbTextReply(payload)
   	qs.watson = speech
 
-if(help){
-
-	request.post({
-	  headers: {'content-type' : 'application/x-www-form-urlencoded'},
-	  url:     'http://cb8777d1.ngrok.io/chzw',
-	  body:    "text="+speech
-	}, function(error, response, body){
-		speech = body
-		console.log('watson A:',speech)
-		if (speech && mid === state.asking) {
-			console.log(hasAnswer)
-			if (hasAnswer !== undefined && hasAnswer === false) {
-				watch(qs, 'ifly', (prop,action, val) => {
-					if (val === 'noanswer' && speech) {
-						console.log('noanswer watson play')
-						talker.emit('talk', speech)
-					}
-					unwatch(qs, 'ifly')
-				})
-			} else talker.emit('talk', speech)
-		} else {
-			qs.watson = 'nullreply'
-			talker.emit('talk', '')
-		}
-	})
-}else{
-	console.log('watson A:',speech)
 	if (speech && mid === state.asking) {
-		console.log(hasAnswer)
-		if (hasAnswer !== undefined && hasAnswer === false) {
-			watch(qs, 'ifly', (prop,action, val) => {
-				if (val === 'noanswer' && speech) {
-					console.log('noanswer watson play')
-					talker.emit('talk', speech)
-				}
-				unwatch(qs, 'ifly')
-			})
-		} else talker.emit('talk', speech)
-	} else {
+		request.post({
+		  headers: {'content-type' : 'application/x-www-form-urlencoded'},
+		  url:     'http://cb8777d1.ngrok.io/chzw',
+		  body:    "text="+speech
+		}, function(error, response, body){
+			speech = body
+			console.log('watson A:',speech)
+		
+				console.log(hasAnswer)
+				if (hasAnswer !== undefined && hasAnswer === false) {
+					watch(qs, 'ifly', (prop,action, val) => {
+						if (val === 'noanswer' && speech) {
+							console.log('noanswer watson play')
+							talker.emit('talk', speech)
+						}
+						unwatch(qs, 'ifly')
+					})
+				} else talker.emit('talk', speech)
+		})
+	} else if ( payload.type !== 'review') {
 		qs.watson = 'nullreply'
 		talker.emit('talk', '')
 	}
-}
 })
 
 ifly.on('iot', res => {
 	console.log('ifly iot:', res)
-	qs.watson = null
-	conversation.publish(res.topic, res.payload)
+	let p = JSON.parse(res.payload)
+	p.mid = state.asking
+	//qs.watson = null
+	conversation.publish(res.topic, JSON.stringify(p))
 })
 ifly.on('a', answer => {
 	console.log('ifly A:', answer)
@@ -137,7 +120,7 @@ ifly.on('a', answer => {
 talker.on('talk', line => {
 	console.log('talker get', line)
 	const id = md5(String(new Date()))
-	lines[id] = null
+	//lines[id] = null
 	const cue = (prop, action, newQ) => {
 		console.log('watch change', line, newQ, id)
 		if( newQ === 0 ) {
@@ -160,8 +143,9 @@ tts.on('finish', () => {
 			hasNext = true
 		}
 	})
-	state.speaking = hasNext
+	console.log('on finish:',qs.watson, qs.ifly, hasNext )
 	if (!hasNext && qs.watson && qs.ifly) {
+	state.speaking = hasNext
 		state.asking = null
 		notify( () => {stt.emit('start')} )
 	}
