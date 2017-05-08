@@ -1,4 +1,4 @@
-const exec = require('child_process').execFile
+const exec = require('child_process').exec//File
 const events = require('events')
 class eventEmitter extends events {}
 
@@ -9,14 +9,12 @@ const avg = arr => {
 	}
 	return sum / arr.length
 }
-const command = 'EXEfile_face_detection/Face_detect_NoShow.exe'
+const command = 'EXEfile_face_detection/MultiCam_Face_Detection_NoShowImage.exe'
 const face = new eventEmitter()
 
 let hasFace = false
 let state = []
-const detection = exec( command,  {
-        cwd: 'C:/Users/IBM_ADMIN/Documents/nodebot/'
-    },
+const detection = exec( command,
 	(err, stdout, stderr) => {
 		if (err) {
 			console.log('err,',err)
