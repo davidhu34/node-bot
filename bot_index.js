@@ -5,8 +5,13 @@ const events = require('events')
 class eventEmitter extends events {}
 const { watch, unwatch } = require('melanke-watchjs')
 const md5 = require('md5')
-//const player = require('player')
-//const ding = new player('./notify.mp3')
+const player = require('play-sound')()
+const notify = cb => {
+	player.play('./notify.mp3', {timeout: 1000}, err => {
+		if(err) console.log('notify sound err:', err)
+		else cb()
+	})
+}
 
 //const waker = require('./sp.js').waker()
 //const waker = require('./faceDetection')
@@ -21,7 +26,8 @@ const talker = new eventEmitter()
 
 let state = {
 	asleep: true,
-	speaking: false
+	speaking: false,
+	asking: null
 }
 let lines = {}
 let qs = {}
@@ -38,17 +44,26 @@ stt.on('result', result => {
 	const res = result.replace(/\s/g, '')
 	console.log('~'+res+'~')
 	if (!state.speaking) {
-		if (res) {
+		if (res && res !== '。') {
 			const mid = md5(res)
 			qs = {
 				ifly: null,
 				watson: null
 			}
+			notify(()=>{})
 			console.log('to publish:', res)
 			state.speaking = true
+			state.asking = mid
 			//tts.emit('speak', res)
 			conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res, mid:mid}) )
 			ifly.emit('q',res)
+			setTimeout(() => {
+				if(!qs.watson) {
+					console.log('6s time up watson')
+					qs.watson = 'noreply'
+					talker.emit('talk','')
+				}
+			},6000)
 		} else stt.emit('start')
 	} 
 })
@@ -56,11 +71,39 @@ stt.on('result', result => {
 conversation.on('message', (topic, payloadBuffer) =>　{
 	const payload = JSON.parse(payloadBuffer)
 	console.log(payload)
-	const hasAnswer = payload.data.hasAnswer
-	const speech = fbTextReply(payload)
-	qs.watson = speech
+	const {hasAnswer, help} = payload.data
+	const mid = payload.prev.mid
+	let speech = fbTextReply(payload)
+  	qs.watson = speech
+
+if(help){
+
+	request.post({
+	  headers: {'content-type' : 'application/x-www-form-urlencoded'},
+	  url:     'http://cb8777d1.ngrok.io/chzw',
+	  body:    "text="+speech
+	}, function(error, response, body){
+		speech = body
+		console.log('watson A:',speech)
+		if (speech && mid === state.asking) {
+			console.log(hasAnswer)
+			if (hasAnswer !== undefined && hasAnswer === false) {
+				watch(qs, 'ifly', (prop,action, val) => {
+					if (val === 'noanswer' && speech) {
+						console.log('noanswer watson play')
+						talker.emit('talk', speech)
+					}
+					unwatch(qs, 'ifly')
+				})
+			} else talker.emit('talk', speech)
+		} else {
+			qs.watson = 'nullreply'
+			talker.emit('talk', '')
+		}
+	})
+}else{
 	console.log('watson A:',speech)
-	if (speech) {
+	if (speech && mid === state.asking) {
 		console.log(hasAnswer)
 		if (hasAnswer !== undefined && hasAnswer === false) {
 			watch(qs, 'ifly', (prop,action, val) => {
@@ -71,11 +114,16 @@ conversation.on('message', (topic, payloadBuffer) =>　{
 				unwatch(qs, 'ifly')
 			})
 		} else talker.emit('talk', speech)
+	} else {
+		qs.watson = 'nullreply'
+		talker.emit('talk', '')
 	}
+}
 })
 
 ifly.on('iot', res => {
 	console.log('ifly iot:', res)
+	qs.watson = null
 	conversation.publish(res.topic, res.payload)
 })
 ifly.on('a', answer => {
@@ -113,7 +161,10 @@ tts.on('finish', () => {
 		}
 	})
 	state.speaking = hasNext
-	if (!hasNext && qs.watson && qs.ifly) stt.emit('start')
+	if (!hasNext && qs.watson && qs.ifly) {
+		state.asking = null
+		notify( () => {stt.emit('start')} )
+	}
 //	if (!state.asleep)
 //		stt.emit('start')
 })
@@ -124,9 +175,9 @@ tts.on('finish', () => {
 conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res}))
 ifly.emit('q',res)
 */
-//ding.play( () => {
+notify( () => {
 	stt.emit('start')
-//})
+})
 /*
 request.post({	
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
@@ -140,6 +191,8 @@ request.post({
   url:     'http://cb8777d1.ngrok.io/chzw',
   body:    "text=简化字，民间俗稱"
 }, function(error, response, body){
-  console.log(body)
+  //console.log(response)
+  return 'hi'
 })
+
 */

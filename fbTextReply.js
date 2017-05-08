@@ -37,6 +37,14 @@ module.exports = payload => {
 			return data.hsr
 		case 'text':
 		default:
-			return data.text
+			/*if (data.help) {
+				request.post({
+			  headers: {'content-type' : 'application/x-www-form-urlencoded'},
+			  url:     'http://cb8777d1.ngrok.io/chzw',
+			  body:    "text=简化字，民间俗稱"
+			}, function(error, response, body){
+			  console.log(body)
+			})
+			} else */return data.text
 	}
 }
