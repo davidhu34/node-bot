@@ -74,7 +74,31 @@ const spWaker = () => {
 	return waker
 }
 
+const spLight = () => {
+	const light = new eventEmitter() 
+	const sp = new SerialPort(COMport.light, {
+	    baudrate: 9600
+	})
+	sp.on("open", () => {
+		 console.log('Light port opened')
+	})
+	light.on('lit', state => {
+		console.log('lit:',state)
+		switch (state) {
+			case 'on':
+				sp.write('A')
+			case 'bling':
+				sp.write('B')
+			case 'off':
+			default:
+				sp.write('C')
+		}
+	})
+	return light
+}
+
 module.exports = {
 	waker: spWaker,
 	tts: spTTS,
+	light: spLight
 }

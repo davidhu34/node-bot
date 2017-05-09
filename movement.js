@@ -55,6 +55,7 @@ function write_next_message(data){
 	delete arr[arr.length-1];
 	//message = arr.toString().replace(/,/g,' ').trim();
    }
+   console.log(message_queue.length,'left in q');
    console.log('final send:'+message);
    // if(message=='undefined'){
 	   // message = 'A 1';
@@ -103,10 +104,8 @@ sp.on('data', function (data) {
 
 function getMNCode(mncode){
 	var check = [];
-	fs.readFileSync(mncode+'.txt', 'utf8', function (err,data) {
-	  if (err) {
-	    return console.log(err);
-	  }
+	var data = fs.readFileSync(mncode+'.txt', {encoding:'utf8'});
+	  console.log('MNCODE:', data);
 	  var splitData = data.split("\n");
 	  
 	  var count = 0;
@@ -117,19 +116,22 @@ function getMNCode(mncode){
 	  }
 	  check=check.reverse();
 	  console.log(check);
-	});
+	
 	return check;
 }
 
 
 movement.on('move', action => {
+	console.log('to move', action)
 	switch(action) {
 		default:
-			mndata = true
+		if(message_queue.length < 2) {
+			mndata = true;
 			message_queue = getMNCode('welcome');
 			write_next_message();
+		}
 	}
 })
 
 
-modele.exports = movement;
+module.exports = movement;

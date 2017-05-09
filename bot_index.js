@@ -13,14 +13,16 @@ const notify = cb => {
 	})
 }
 
-const waker = require('./sp.js').waker()
+//const waker = new eventEmitter() // dummy waker
 //const waker = require('./faceDetection')
-//const waker = new eventEmitter()
-const tts = require('./sp.js').tts()
-const stt = require('./stt.js').javaStt()
-const fbTextReply = require('./fbTextReply')
-const conversation = require('./conversation.js')
+const waker = require('./sp').waker()
+const tts = require('./sp').tts()
+//const light = require('./sp').light()
+const stt = require('./stt').javaStt()
+const movement = require('./movement')
+const conversation = require('./conversation')
 const ifly = require('./iflyQA')()
+const fbTextReply = require('./fbTextReply')
 
 const talker = new eventEmitter() 
 
@@ -35,6 +37,7 @@ let qs = {}
 waker.on('wake', () => {
 	if(state.asleep) {
 		notify(() => {
+			//light.emit('lit', 'on')
 			stt.emit('start')
 			state.asleep = false
 		})
@@ -54,7 +57,6 @@ stt.on('result', result => {
 			console.log('to publish:', res)
 			state.speaking = true
 			state.asking = mid
-			//tts.emit('speak', res)
 			conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res, mid:mid}) )
 			ifly.emit('q',res)
 			setTimeout(() => {
@@ -114,7 +116,6 @@ ifly.on('iot', res => {
 })
 ifly.on('a', answer => {
 	console.log('ifly A:', answer)
-	//tts.emit('speak', answer)
 	if(answer) {
 		qs.ifly = answer
 		talker.emit('talk', answer)
@@ -123,12 +124,15 @@ ifly.on('a', answer => {
 talker.on('talk', line => {
 	console.log('talker get', line)
 	const id = md5(String(new Date()))
-	//lines[id] = null
 	const cue = (prop, action, newQ) => {
 		console.log('watch change', line, newQ, id)
 		if( newQ === 0 ) {
 			console.log('to speak:', line)
 			tts.emit('speak', line)
+			if(line) {
+				movement.emit('move')
+				//light.emit('lit', 'off')
+			}
 			unwatch(lines, id)
 		}
 	}
@@ -150,7 +154,10 @@ tts.on('finish', () => {
 	if (!hasNext && qs.watson && qs.ifly) {
 		state.speaking = hasNext
 		state.asking = null
-		notify( () => {stt.emit('start')} )
+		notify( () => {
+			//light.emit('lit', 'on')
+			stt.emit('start')
+		})
 	}
 //	if (!state.asleep)
 //		stt.emit('start')
