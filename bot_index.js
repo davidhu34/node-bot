@@ -13,9 +13,9 @@ const notify = cb => {
 	})
 }
 
-//const waker = require('./sp.js').waker()
+const waker = require('./sp.js').waker()
 //const waker = require('./faceDetection')
-const waker = new eventEmitter()
+//const waker = new eventEmitter()
 const tts = require('./sp.js').tts()
 const stt = require('./stt.js').javaStt()
 const fbTextReply = require('./fbTextReply')
@@ -31,15 +31,15 @@ let state = {
 }
 let lines = {}
 let qs = {}
-/*
+
 waker.on('wake', () => {
-	ding.play(() => {
-		if(state.asleep) {
+	if(state.asleep) {
+		notify(() => {
 			stt.emit('start')
 			state.asleep = false
-		}
-	})
-})*/
+		})
+	}
+})
 stt.on('result', result => {
 	const res = result.replace(/\s/g, '')
 	console.log('~'+res+'~')
@@ -64,7 +64,10 @@ stt.on('result', result => {
 					talker.emit('talk','')
 				}
 			},6000)
-		} else stt.emit('start')
+		} else {
+			//stt.emit('start')
+			state.asleep = true
+		}
 	} 
 })
 
@@ -76,7 +79,7 @@ conversation.on('message', (topic, payloadBuffer) =>　{
 	let speech = fbTextReply(payload)
   	qs.watson = speech
 
-	if (speech && mid === state.asking) {
+	if (speech && mid === state.asking && state.speaking) {
 		request.post({
 		  headers: {'content-type' : 'application/x-www-form-urlencoded'},
 		  url:     'http://cb8777d1.ngrok.io/chzw',
@@ -96,7 +99,7 @@ conversation.on('message', (topic, payloadBuffer) =>　{
 					})
 				} else talker.emit('talk', speech)
 		})
-	} else if ( payload.type !== 'review') {
+	} else if ( payload.type !== 'review' && state.speaking && mid === state.asking) {
 		qs.watson = 'nullreply'
 		talker.emit('talk', '')
 	}
@@ -145,7 +148,7 @@ tts.on('finish', () => {
 	})
 	console.log('on finish:',qs.watson, qs.ifly, hasNext )
 	if (!hasNext && qs.watson && qs.ifly) {
-	state.speaking = hasNext
+		state.speaking = hasNext
 		state.asking = null
 		notify( () => {stt.emit('start')} )
 	}
@@ -159,9 +162,12 @@ tts.on('finish', () => {
 conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res}))
 ifly.emit('q',res)
 */
+
 notify( () => {
-	stt.emit('start')
+//	stt.emit('start')
 })
+
+
 /*
 request.post({	
   headers: {'content-type' : 'application/x-www-form-urlencoded'},
