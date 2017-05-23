@@ -7,7 +7,7 @@ const events = require('events')
 class eventEmitter extends events {}
 
 const ttsBuffer = text => {
-		const params = ['m51', 'h0']
+		const params = ['m54', 'h0']
 		const paramsStr = '['+params.join('][')+']'
 		const ttscmd = paramsStr+text
 		const b = ttscmd.match(/[^\x00-\xff]/g)
@@ -74,7 +74,37 @@ const spWaker = () => {
 	return waker
 }
 
+const spLight = () => {
+	const light = new eventEmitter() 
+	const sp = new SerialPort(COMport.light, {
+	    baudrate: 115200,
+		parser: SerialPort.parsers.readline("\n")
+	})
+	sp.on("open", () => {
+		 console.log('Light port opened')
+		 setTimeout( () => {sp.write('A') }, 5000)
+	})
+	light.on('lit', state => {
+		console.log('lit:',state)
+		switch (state) {
+			case 'on':
+				sp.write('A')
+				break;
+			case 'bling':
+				sp.write('B')
+				break;
+			case 'off':
+			default:
+				sp.write('C')
+				break;
+			return;
+		}
+	})
+	return light
+}
+
 module.exports = {
 	waker: spWaker,
 	tts: spTTS,
+	light: spLight
 }

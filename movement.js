@@ -7,8 +7,8 @@ var sp = new SerialPort("COM3", {
 });
 var movement = new events()
 
-
-
+var scriptActions = ['ball', 'water', 'hand']
+var curAction = '';
 var message_queue = [];
 var arrdelay=0;
 
@@ -49,13 +49,14 @@ function write_next_message(data){
 	} else {
 		console.log('timeoutvalue :'+timeoutvalue);
 	}
-	console.log("timeout time:"+timeoutvalue);
-	console.log("delay:"+arrdelay);
+	//console.log("timeout time:"+timeoutvalue);
+	//console.log("delay:"+arrdelay);
 	if(arr[arr.length-1] > 10000 )
 	delete arr[arr.length-1];
 	//message = arr.toString().replace(/,/g,' ').trim();
    }
-   console.log('final send:'+message);
+   console.log(message_queue.length,'left in q');
+   //console.log('final send:'+message);
    // if(message=='undefined'){
 	   // message = 'A 1';
    // }
@@ -92,21 +93,20 @@ sp.on("error", function(err) {
 
 
 sp.on('data', function (data) {
-  console.log('Data: ' + data);	 
+  //console.log('Data: ' + data);	 
   if(data.toString().indexOf('OK')>-1 && mndata){
-	  console.log('Send next command');	
+	  //console.log('Send next command');	
 	  write_next_message(data); 	 
   }
-  
+  if (message_queue.length < 2 && scriptActions.indexOf(curAction) > -1)
+  	movement.emit('endscript')
 });
 
 
 function getMNCode(mncode){
 	var check = [];
-	fs.readFileSync(mncode+'.txt', 'utf8', function (err,data) {
-	  if (err) {
-	    return console.log(err);
-	  }
+	var data = fs.readFileSync(mncode+'.txt', {encoding:'utf8'});
+	  console.log('MNCODE:');
 	  var splitData = data.split("\n");
 	  
 	  var count = 0;
@@ -117,19 +117,40 @@ function getMNCode(mncode){
 	  }
 	  check=check.reverse();
 	  console.log(check);
-	});
+	
 	return check;
 }
 
 
 movement.on('move', action => {
+	console.log('to move', action)
+	curAction = action
 	switch(action) {
+		case 'ball':
+			message_queue = getMNCode('ball2');
+			//if(message_queue.length < 2)
+				write_next_message();
+			break;
+		case 'water':
+			message_queue = getMNCode('water');
+			//if(message_queue.length < 2)
+				write_next_message();
+			break;
+		case 'hand':
+			message_queue = getMNCode('shakehand');
+			//if(message_queue.length < 2)
+				write_next_message();
+			break;
+		
 		default:
-			mndata = true
-			message_queue = getMNCode('welcome');
+		if(message_queue.length < 2) {
+			mndata = true;
+			message_queue = getMNCode('speaking_windows');
 			write_next_message();
+		}
+		break;
 	}
 })
 
 
-modele.exports = movement;
+module.exports = movement;

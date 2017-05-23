@@ -13,14 +13,16 @@ const notify = cb => {
 	})
 }
 
-const waker = require('./sp.js').waker()
+//const waker = new eventEmitter() // dummy waker
 //const waker = require('./faceDetection')
-//const waker = new eventEmitter()
-const tts = require('./sp.js').tts()
-const stt = require('./stt.js').javaStt()
-const fbTextReply = require('./fbTextReply')
-const conversation = require('./conversation.js')
+const waker = require('./sp').waker()
+const tts = require('./sp').tts()
+//const light = require('./sp').light()
+const stt = require('./stt').javaStt()
+const movement = require('./movement')
+const conversation = require('./conversation')
 const ifly = require('./iflyQA')()
+const fbTextReply = require('./fbTextReply')
 
 const talker = new eventEmitter() 
 
@@ -32,9 +34,20 @@ let state = {
 let lines = {}
 let qs = {}
 
+const scripts = ['玩球', '到水', '倒水', '握手']
+const hardcode = q => {
+	for (let i = 0; i < scripts.length; i++) {
+		if ( q.indexOf(scripts[i]) > -1 )
+			return scripts[i]
+	}
+	return null
+}
+
+
 waker.on('wake', () => {
 	if(state.asleep) {
 		notify(() => {
+			//light.emit('lit', 'on')
 			stt.emit('start')
 			state.asleep = false
 		})
@@ -45,25 +58,57 @@ stt.on('result', result => {
 	console.log('~'+res+'~')
 	if (!state.speaking) {
 		if (res && res !== '。') {
-			const mid = md5(res+String(new Date()))
-			qs = {
-				ifly: null,
-				watson: null
-			}
-			notify(()=>{})
-			console.log('to publish:', res)
-			state.speaking = true
-			state.asking = mid
-			//tts.emit('speak', res)
-			conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res, mid:mid}) )
-			ifly.emit('q',res)
-			setTimeout(() => {
-				if(!qs.watson) {
-					console.log('6s time up watson')
-					qs.watson = 'noreply'
-					talker.emit('talk','')
+			const scripted = hardcode(res)
+			if (scripted) {
+				let scriptLine = ''
+				let scriptMove = ''
+				switch(scripted) {
+					case '玩球':
+						scriptLine = '好，給我球'
+						scriptMove = 'ball'
+						break
+					case '握手':
+						scriptLine = '好，伸出你的手'
+						scriptMove = 'hand'
+						break
+					case '到水':
+					case '倒水':
+					default:
+						scriptLine = '好，給我水'
+						scriptMove = 'water'
+						break
 				}
-			},6000)
+				const mid = md5(res+String(new Date()))
+				qs = {
+					ifly: null,
+					watson: null
+				}
+				notify(()=>{})
+				console.log('TODO:', res)
+				state.speaking = true
+				state.asking = mid
+				talker.emit('talk', scriptLine)
+				movement.emit('move', scriptMove)
+			} else {
+				const mid = md5(res+String(new Date()))
+				qs = {
+					ifly: null,
+					watson: null
+				}
+				notify(()=>{})
+				console.log('to publish:', res)
+				state.speaking = true
+				state.asking = mid
+				conversation.publish('iot-2/evt/text/fmt/json', JSON.stringify({data:res, mid:mid}) )
+				ifly.emit('q',res)
+				setTimeout(() => {
+					if(!qs.watson) {
+						console.log('6s time up watson')
+						qs.watson = 'noreply'
+						talker.emit('talk','')
+					}
+				},6000)
+			}
 		} else {
 			//stt.emit('start')
 			state.asleep = true
@@ -114,21 +159,32 @@ ifly.on('iot', res => {
 })
 ifly.on('a', answer => {
 	console.log('ifly A:', answer)
-	//tts.emit('speak', answer)
 	if(answer) {
 		qs.ifly = answer
 		talker.emit('talk', answer)
 	} else qs.ifly = 'noanswer'
 })
+movement.on('endscript',() => {
+	qs = {
+		watson: 'endscript',
+		ifly: 'endscript'
+	}
+	talker.emit('talk', '')
+})
+
+
 talker.on('talk', line => {
 	console.log('talker get', line)
 	const id = md5(String(new Date()))
-	//lines[id] = null
 	const cue = (prop, action, newQ) => {
 		console.log('watch change', line, newQ, id)
 		if( newQ === 0 ) {
 			console.log('to speak:', line)
 			tts.emit('speak', line)
+			if(line && line !== '好，給我球' && line !== '好，給我水'&& line !== '好，伸出你的手') {
+				movement.emit('move')
+				//light.emit('lit', 'off')
+			}
 			unwatch(lines, id)
 		}
 	}
@@ -150,7 +206,10 @@ tts.on('finish', () => {
 	if (!hasNext && qs.watson && qs.ifly) {
 		state.speaking = hasNext
 		state.asking = null
-		notify( () => {stt.emit('start')} )
+		notify( () => {
+			//light.emit('lit', 'on')
+			stt.emit('start')
+		})
 	}
 //	if (!state.asleep)
 //		stt.emit('start')

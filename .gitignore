@@ -5,6 +5,7 @@ npm-debug.log
 .DS_Store
 dist
 static
+*.txt
 *~
 *.pyc
 .grunt

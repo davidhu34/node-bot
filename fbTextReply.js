@@ -45,6 +45,6 @@ module.exports = payload => {
 			}, function(error, response, body){
 			  console.log(body)
 			})
-			} else */return data.text
+			} else */return (data.text)?data.text: 'nulltext'
 	}
 }
