@@ -41,4 +41,4 @@ detection.stdout.on('data', data => {
 detection.stderr.on('data', data => {
 	console.log('stderr:',data)
 })
-module.exports = face
+//module.exports = face

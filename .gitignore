@@ -1,3 +1,9 @@
+EXE*
+*.wav
+*.mp3
+*.m4a
+*.dll
+tts_sample.exe
 configs.js
 msc*
 node_modules
