@@ -37,8 +37,10 @@ let qs = {}
 waker.on('wake', (payload) => {
 	if(state.asleep) {
 		state.asleep = false
-		if(!payload) stt.emit('start')
-		else if(Object.keys(lines).length === 0) {
+		if(!payload) {
+			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
+			stt.emit('start')
+		} else if (Object.keys(lines).length === 0) {
 			console.log('greeting:',payload.greeting)
 			qs = {
 				watson: 'greeting',
@@ -52,6 +54,7 @@ waker.on('wake', (payload) => {
 waker.on('sleep', () => {
 	if(!state.asleep) {
 		state.asleep = true
+		iot.publish('iot-2/evt/light/fmt/string', 'C')//light.emit('lit', 'on')
 	}
 })
 
@@ -67,16 +70,6 @@ const hardcode = q => {
 	return null
 }
 
-
-waker.on('wake', () => {
-	if(state.asleep) {
-		notify(() => {
-			//light.emit('lit', 'on')
-			stt.emit('start')
-			state.asleep = false
-		})
-	}
-})
 stt.on('result', result => {
 	const res = result.replace(/\s/g, '')
 	console.log('~'+res+'~')
@@ -90,6 +83,7 @@ stt.on('result', result => {
 			state.speaking = true
 			state.asking = mid
 
+			iot.publish('iot-2/evt/light/fmt/light', 'A')
 			const scripted = hardcode(res)
 			if (scripted) {
 				let scriptLine = ''
@@ -130,7 +124,7 @@ stt.on('result', result => {
 			}
 		} else {
 			stt.emit('start')
-			}
+		}
 	} 
 })
 
@@ -203,7 +197,7 @@ talker.on('talk', line => {
 				tts.emit('speak', line)
 			if(line && line !== '好，給我球' && line !== '好，給我水'&& line !== '好，伸出你的手') {
 				//movement.emit('move')
-				//light.emit('lit', 'off')
+				iot.publish('iot-2/evt/light/fmt/string', 'C')//light.emit('lit', 'off')
 			}
 			unwatch(lines, id)
 		}
@@ -227,7 +221,7 @@ tts.on('finish', () => {
 		state.speaking = hasNext
 		state.asking = null
 		notify( () => {
-			//light.emit('lit', 'on')
+			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
 			stt.emit('start')
 		})
 	}

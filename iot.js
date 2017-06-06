@@ -3,8 +3,6 @@ const mqtt = require('mqtt')
 
 const configs = require('./configs.js')
 
-const conversation = new ConversationV1(configs.conversation)
-
 const m = configs.mqtt
 console.log(m)
 const clientId = [m.type, m.organizationId, m.deviceType, m.deviceId].join(':')
