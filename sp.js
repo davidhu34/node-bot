@@ -47,6 +47,7 @@ const spTTS = () => {
 	})
 
 	tts.on('speak', text => {
+		if(!text) tts.emit('finish')
 		sp.write(ttsBuffer(text))
 	})
 	return tts

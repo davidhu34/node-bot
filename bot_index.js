@@ -15,11 +15,11 @@ const notify = cb => {
 const waker = new eventEmitter() // dummy waker
 //const waker = require('./faceDetection')
 //const waker = require('./sp').waker()
-//const tts = require('./sp').tts()
+const tts = require('./sp').tts()
 //const light = require('./sp').light()
 //const movement = require('./movement')
 const stt = require('./stt').javaStt()
-const tts = require('./ttsEXE')
+//const tts = require('./ttsEXE')
 const iot = require('./iot')
 const ifly = require('./iflyQA')()
 const fbTextReply = require('./fbTextReply')
@@ -38,6 +38,7 @@ waker.on('wake', (payload) => {
 	if(state.asleep) {
 		state.asleep = false
 		if(!payload) {
+			console.log('LISTEN LIGHT')
 			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
 			stt.emit('start')
 		} else if (Object.keys(lines).length === 0) {
@@ -54,7 +55,9 @@ waker.on('wake', (payload) => {
 waker.on('sleep', () => {
 	if(!state.asleep) {
 		state.asleep = true
-		iot.publish('iot-2/evt/light/fmt/string', 'C')//light.emit('lit', 'on')
+		state.asking = null
+		console.log('SLEEPING LIGHT')
+		iot.publish('iot-2/evt/light/fmt/string', 'D')//light.emit('lit', 'on')
 	}
 })
 
@@ -83,6 +86,7 @@ stt.on('result', result => {
 			state.speaking = true
 			state.asking = mid
 
+			console.log('THINKING LIGHT')
 			iot.publish('iot-2/evt/light/fmt/light', 'A')
 			const scripted = hardcode(res)
 			if (scripted) {
@@ -197,6 +201,7 @@ talker.on('talk', line => {
 				tts.emit('speak', line)
 			if(line && line !== '好，給我球' && line !== '好，給我水'&& line !== '好，伸出你的手') {
 				//movement.emit('move')
+				console.log('TALK LIGHT')
 				iot.publish('iot-2/evt/light/fmt/string', 'C')//light.emit('lit', 'off')
 			}
 			unwatch(lines, id)
@@ -220,7 +225,8 @@ tts.on('finish', () => {
 	if (!hasNext && qs.watson && qs.ifly) {
 		state.speaking = hasNext
 		state.asking = null
-		notify( () => {
+		if(!state.asleep) notify( () => {
+			console.log('LISTEN LIGHT')
 			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
 			stt.emit('start')
 		})

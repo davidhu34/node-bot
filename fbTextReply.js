@@ -6,7 +6,7 @@ module.exports = payload => {
 		case 'websearch':
 			return data.result
 		case 'weather':
-			return data.weather.narrative
+			return data.weather[0].narrative
 		case 'stock':
 			const stockCode = data.stock.split(':')
 			console.log(stockCode)

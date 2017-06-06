@@ -256,7 +256,7 @@ module.exports = iot => {
 		request.post({
 		  headers: {'content-type' : 'application/x-www-form-urlencoded'},
 		  url:     'http://119.81.236.205:3998/ifly',
-		  body:    "text="+text.replace('+', '加')
+		  body:    "text="+text.replace(/\+/g, '加')
 		}, function(err, response, body){
 			if (err) { console.log(err)
 			} else {
