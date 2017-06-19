@@ -31,10 +31,16 @@ module.exports = payload => {
 			return data.restaurants.map( r => {
 				return r.name
 			}).slice(0,3).join('，')
+		case 'location':
+		   return data.restaurants.map( r => { 
+			return r.name + '，' + r.formatted_address 
+		   }).slice(0,3).join('，')
 		case 'review':
 			return null
 		case 'hsr':
 			return data.hsr
+		/* case 'music':
+			return data.music */
 		case 'text':
 		default:
 			/*if (data.help) {

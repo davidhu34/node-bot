@@ -1,9 +1,9 @@
-EXE*
-*.wav
-*.mp3
-*.m4a
+EXEfile_face_detection
+speech.mp3
+speech.wav
 *.dll
 tts_sample.exe
+
 configs.js
 msc*
 node_modules

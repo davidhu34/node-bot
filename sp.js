@@ -44,11 +44,24 @@ const spTTS = () => {
 			console.log('Finish Playing')
 			tts.emit('finish')
 		}
+		if (hexstr.indexOf('45') > -1) {
+			console.log('Error Playing break')
+			//tts.emit('finish', true)
+		}
 	})
 
 	tts.on('speak', text => {
-		if(!text) tts.emit('finish')
+		if(text === 'noreply'){
+			console.log('dummy speak noreply')
+			tts.emit('finish')	
+		}else 
 		sp.write(ttsBuffer(text))
+	})
+	tts.on('sing', file => {
+		player.play(file, err => {
+			if(err) console.log('play song err:', err)
+			else tts.emit('finish')
+		})
 	})
 	return tts
 

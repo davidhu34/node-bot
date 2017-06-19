@@ -4,6 +4,7 @@ class eventEmitter extends events {}
 const { watch, unwatch } = require('melanke-watchjs')
 const md5 = require('md5')
 const player = require('play-sound')()
+const wget = require('node-wget');
 
 const notify = cb => {
 	player.play('./notify.mp3', {timeout: 1000}, err => {
@@ -17,7 +18,7 @@ const waker = new eventEmitter() // dummy waker
 //const waker = require('./sp').waker()
 const tts = require('./sp').tts()
 //const light = require('./sp').light()
-//const movement = require('./movement')
+const movement = require('./movement')
 const stt = require('./stt').javaStt()
 //const tts = require('./ttsEXE')
 const iot = require('./iot')
@@ -112,7 +113,7 @@ stt.on('result', result => {
 				console.log('TODO:', res)
 				notify(()=>{})
 				talker.emit('talk', scriptLine)
-				//movement.emit('move', scriptMove)
+				movement.emit('move', scriptMove)
 			} else {
 				notify(()=>{})
 				console.log('to publish:', res)
@@ -122,7 +123,7 @@ stt.on('result', result => {
 					if(!qs.watson) {
 						console.log('6s time up watson')
 						qs.watson = 'noreply'
-						talker.emit('talk','')
+						talker.emit('talk','noreply')
 					}
 				},6000)
 			}
@@ -143,6 +144,21 @@ iot.on('message', (topic, payloadBuffer) =>　{
 	  	qs.watson = speech
 		
 		if (speech && mid === state.asking && state.speaking) {
+			if (speech.indexOf('kugou') > -1) {
+				const songUrl = speech
+				const fileName = songUrl.split('/').pop()
+				wget({
+					url: songUrl
+				}, (err, res, body) => {
+					if (err) {
+						console.log('song wget err:', err)
+					} else {
+						console.log('song wget headers:', res.headers)
+						console.log('filename:'+fileName+' is downloaded')
+						talker.emit('talk',fileName)
+					}
+				})
+			} else 
 			request.post({
 			  headers: {'content-type' : 'application/x-www-form-urlencoded'},
 			  url:     'http://119.81.236.205:3998/chzw',
@@ -166,7 +182,7 @@ iot.on('message', (topic, payloadBuffer) =>　{
 			})
 		} else if ( payload.type !== 'review' && state.speaking && mid === state.asking) {
 			qs.watson = 'nullreply'
-			talker.emit('talk', '')
+			talker.emit('talk', 'noreply')
 		}
 	} else if ( payload.wake !== undefined ) {
 		if (payload.wake) waker.emit('wake', payload)
@@ -189,6 +205,22 @@ ifly.on('a', answer => {
 	} else qs.ifly = 'noanswer'
 })
 
+ifly.on('music', songUrl => {
+ const fileName = songUrl.split('/').pop()
+ wget({
+  url: songUrl
+ }, (err, res, body) => {
+  if (err) {
+   console.log('song wget err:', err)
+  } else {
+   console.log('song wget headers:', res.headers)
+   console.log('filename:'+fileName+' is downloaded')
+	qs.ifly = 'song'
+   talker.emit('talk',fileName)
+  }
+ })
+})
+
 
 talker.on('talk', line => {
 	console.log('talker get', line)
@@ -198,9 +230,9 @@ talker.on('talk', line => {
 		if( newQ === 0 ) {
 			console.log('to speak:', line)
 			if(line)
-				tts.emit('speak', line)
+				tts.emit((line.indexOf('mp3') > -1)? 'sing':'speak', line);//tts.emit('speak', line)
 			if(line && line !== '好，給我球' && line !== '好，給我水'&& line !== '好，伸出你的手') {
-				//movement.emit('move')
+				movement.emit('move')
 				console.log('TALK LIGHT')
 				iot.publish('iot-2/evt/light/fmt/string', 'C')//light.emit('lit', 'off')
 			}
@@ -211,7 +243,18 @@ talker.on('talk', line => {
 	lines[id] = Object.keys(lines).length-1
 })
 
-tts.on('finish', () => {
+tts.on('finish', (kill) => {
+	if (kill) {
+		lines = {}
+		state.speaking = false
+		state.asking = null
+		if(!state.asleep) notify( () => {
+			console.log('LISTEN LIGHT')
+			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
+			stt.emit('start')
+		})
+		return
+	}
 	let hasNext = false
 	Object.keys(lines).map( l => {
 		if(lines[l] === 0 ) {
@@ -222,10 +265,10 @@ tts.on('finish', () => {
 		}
 	})
 	console.log('on finish:',qs.watson, qs.ifly, hasNext )
-	if (!hasNext && qs.watson && qs.ifly) {
+	if (!hasNext && qs.watson /*&& qs.ifly*/) {
 		state.speaking = hasNext
 		state.asking = null
-		if(!state.asleep) notify( () => {
+		if(!state.asleep) notify( () => {	
 			console.log('LISTEN LIGHT')
 			iot.publish('iot-2/evt/light/fmt/string', 'B')//light.emit('lit', 'on')
 			stt.emit('start')

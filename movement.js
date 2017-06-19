@@ -128,7 +128,7 @@ function getMNCode(mncode){
 
 movement.on('move', action => {
 	console.log('to move', action)
-
+	
 	curAction = action
 
 	switch(action) {
@@ -151,7 +151,19 @@ movement.on('move', action => {
 		default:
 		if(message_queue.length < 2) {
 			mndata = true;
-			message_queue = getMNCode('speaking_windows');
+			var textArray = [
+			'speaking_windows',
+			'speaking_good',
+			'speaking2_windows',
+			'speaking3',
+			'speaking4',
+			'speaking5',
+			'speaking6',
+			'speaking7'
+			];
+			var randomNumber = Math.floor(Math.random()*textArray.length);
+			console.log('Action======>'+textArray[randomNumber]);
+			message_queue = getMNCode(textArray[randomNumber]);
 			write_next_message();
 		}
 		break;

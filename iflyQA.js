@@ -267,10 +267,14 @@ module.exports = iot => {
 					}
 				})*/
 				const result = JSON.parse(body)
+				 if(result.music) { 
+					 ifly.emit('music', result.music) 
+					} else {
 				ifly.emit('a', result.text)
-				if(result.topic) {
-					//console.log('has topic ifly',iot)
-					ifly.emit('iot', result)
+					if(result.topic) {
+						//console.log('has topic ifly',iot)
+						ifly.emit('iot', result)
+					}
 				}
 			}
 		})
